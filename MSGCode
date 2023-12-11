@@ -1,6 +1,8 @@
 
 
 ####
+
+library(corrplot)
 library(foreign)
 library(xtable)
 library(stargazer)
@@ -24,6 +26,9 @@ Data = apply(Data, 2, as.numeric)
 Data_Cens = Data[,1:9]
 
 Data_Copy = as.data.frame(Data)
+
+corrmatrix <- cor(Data)
+corrplot(corrmatrix, method = 'number')
 
 ### Modello con informazioni sul gruppo
 
@@ -53,7 +58,11 @@ mplnRes = mplnVariational(dataset = Data_Cens, membership = "none", gmin = 1, gm
 
 mplnRes$AICresults$AICmodelselected
 
-mplnRes$BICresults$BICmodelselected # 2 modelli per entrambi
+mplnRes$BICresults$BICmodelselected 
+
+mplnRes$AIC3results$AIC3modelselected
+
+mplnRes$ICLresults$ICLmodelselected # 2 modelli per tutti
 
 etichette = mplnRes$allResults$`G=2`$clusterlabels - 1 # assumendo che i cluster siano sani-malati
 
@@ -119,6 +128,12 @@ arikm3 = c()
 
 arikm4 = c()
 
+aripam2 = c()
+
+aripam3 = c()
+
+aripam4 = c()
+
 c = 0
 
 while(c < 100){
@@ -129,11 +144,23 @@ kmedie3 = kmeans(Data_Cens, 3)
 
 kmedie4 = kmeans(Data_Cens, 4)
 
+pam2 = pam(Data_Cens, 2)
+
+pam3 = pam(Data_Cens, 3)
+
+pam4 = pam(Data_Cens, 4)
+
 arikm2 = append(arikm2, adj.rand.index(kmedie2$cluster, Data_Copy$Class))
 
 arikm3 = append(arikm3, adj.rand.index(kmedie3$cluster, Data_Copy$Class))
 
 arikm4 = append(arikm4, adj.rand.index(kmedie4$cluster, Data_Copy$Class))
+
+aripam2 = append(aripam2, adj.rand.index(pam2$cluster, Data_Copy$Class))
+
+aripam3 = append(aripam3, adj.rand.index(pam3$cluster, Data_Copy$Class))
+
+aripam4 = append(aripam4, adj.rand.index(pam4$cluster, Data_Copy$Class))
 
 c = c+1
 
@@ -156,8 +183,29 @@ mean(arikm4)
 
 sd(arikm4)
 
-fviz_cluster(kmedie2, data = Data,
-             palette = c("#2E9FDF", "#00AFBB"), 
-             geom = "point",
-             ellipse.type = "convex", 
-             ggtheme = theme_bw()
+
+mean(aripam2)
+
+sd(aripam2)
+##
+
+mean(aripam3)
+
+sd(aripam3)
+##
+
+mean(aripam4)
+
+sd(aripam4)
+
+
+##
+
+fviz_nbclust(Data_Cens, kmeans, "silhouette", NULL, 4, linecolor="blue") +
+  
+  labs(title= "K-Medie")
+
+fviz_nbclust(Data_Cens, cluster::pam, "silhouette", NULL, 4, linecolor = "red") +
+
+labs(title= "PAM")
+             
