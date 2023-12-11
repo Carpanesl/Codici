@@ -1,0 +1,163 @@
+
+
+####
+library(foreign)
+library(xtable)
+library(stargazer)
+library("mlbench")
+library("MASS")
+library("pROC")
+library(MPLNClust)
+library(factoextra)
+library(ggpubr)
+data("BreastCancer")
+
+
+### Preparazione dei dati 
+
+levels(BreastCancer$Class)=c(0,1)
+
+Data = na.omit(BreastCancer[, 2:11])
+
+Data = apply(Data, 2, as.numeric)
+
+Data_Cens = Data[,1:9]
+
+Data_Copy = as.data.frame(Data)
+
+### Modello con informazioni sul gruppo
+
+mplnRes = mplnVariational(dataset = Data, membership = "none", gmin = 1, gmax = 3)
+
+
+mplnRes$AICresults$AICmodelselected
+
+mplnRes$BICresults$BICmodelselected # 2 modelli per entrambi i criteri
+
+etichette = mplnRes$allResults$`G=2`$clusterlabels - 1 # assumendo che i cluster siano sani-malati
+
+adj.rand.index(Data_Copy[,10], etichette)
+
+maligni_veri = which(Data_Copy[,10] == 1)
+
+sum(etichette[maligni_veri])/length(maligni_veri)*100
+
+benigni_veri = which(Data_Copy[,10] == 0)
+
+sum(etichette[benigni_veri]==0)/length(benigni_veri)*100
+
+
+### Modello senza informazioni sul gruppo
+
+mplnRes = mplnVariational(dataset = Data_Cens, membership = "none", gmin = 1, gmax = 3)
+
+mplnRes$AICresults$AICmodelselected
+
+mplnRes$BICresults$BICmodelselected # 2 modelli per entrambi
+
+etichette = mplnRes$allResults$`G=2`$clusterlabels - 1 # assumendo che i cluster siano sani-malati
+
+Data_Copy[,11] = etichette
+
+adj.rand.index(Data_Copy[,10], etichette)
+
+rand.index(Data_Copy[,10], etichette)
+
+maligni_veri = which(Data_Copy[,10] == 1)
+
+sum(etichette[maligni_veri])/length(maligni_veri)*100
+
+benigni_veri = which(Data_Copy[,10] == 0)
+
+sum(etichette[benigni_veri]==0)/length(benigni_veri)*100
+
+mplnVisualizeBar(1:683, mplnRes$allResults$`G=2`$probaPost, mplnRes$allResults$`G=2`$clusterlabels)
+
+mplnRes$allResults$`G=2`$mu
+
+mplnRes$allResults$`G=2`$sigma
+
+
+
+### rappresentiamo
+
+
+Condizione_Vera  = as.character(Data[,10])
+
+res.pca <- prcomp(Data_Cens,  scale = TRUE)
+# Coordinates of individuals
+ind.coord <- as.data.frame(get_pca_ind(res.pca)$coord)
+# Add clusters obtained using the K-means algorithm
+ind.coord$cluster <- factor(etichette)
+# Add Species groups from the original data sett
+ind.coord$Tumore<- Condizione_Vera
+# Data inspection
+head(ind.coord)
+# Percentage of variance explained by dimensions
+eigenvalue <- round(get_eigenvalue(res.pca), 1)
+variance.percent <- eigenvalue$variance.percent
+head(eigenvalue)
+
+
+ggscatter(
+  ind.coord, x = "Dim.1", y = "Dim.2", 
+  color = "cluster", palette = "npg", ellipse = TRUE, ellipse.type = "convex",
+  shape = "Tumore", size = 1.5,  legend = "right", ggtheme = theme_bw(),
+  xlab = paste0("Dim 1 (", variance.percent[1], "% )" ),
+  ylab = paste0("Dim 2 (", variance.percent[2], "% )" )
+) +
+  stat_mean(aes(color = cluster), size = 4)
+##
+
+
+# Metodi distance-based
+
+
+arikm2 = c()
+
+arikm3 = c()
+
+arikm4 = c()
+
+c = 0
+
+while(c < 100){
+
+kmedie2 = kmeans(Data_Cens, 2)
+
+kmedie3 = kmeans(Data_Cens, 3)
+
+kmedie4 = kmeans(Data_Cens, 4)
+
+arikm2 = append(arikm2, adj.rand.index(kmedie2$cluster, Data_Copy$Class))
+
+arikm3 = append(arikm3, adj.rand.index(kmedie3$cluster, Data_Copy$Class))
+
+arikm4 = append(arikm4, adj.rand.index(kmedie4$cluster, Data_Copy$Class))
+
+c = c+1
+
+}
+
+###
+
+
+mean(arikm2)
+
+sd(arikm2)
+##
+
+mean(arikm3)
+
+sd(arikm3)
+##
+
+mean(arikm4)
+
+sd(arikm4)
+
+fviz_cluster(kmedie2, data = Data,
+             palette = c("#2E9FDF", "#00AFBB"), 
+             geom = "point",
+             ellipse.type = "convex", 
+             ggtheme = theme_bw()
