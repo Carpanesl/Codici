@@ -95,15 +95,15 @@ mplnRes$allResults$`G=2`$sigma
 Condizione_Vera  = as.character(Data[,10])
 
 res.pca <- prcomp(Data_Cens,  scale = TRUE)
-# Coordinates of individuals
+
 ind.coord <- as.data.frame(get_pca_ind(res.pca)$coord)
-# Add clusters obtained using the K-means algorithm
+
 ind.coord$cluster <- factor(etichette)
-# Add Species groups from the original data sett
+
 ind.coord$Tumore<- Condizione_Vera
-# Data inspection
+
 head(ind.coord)
-# Percentage of variance explained by dimensions
+
 eigenvalue <- round(get_eigenvalue(res.pca), 1)
 variance.percent <- eigenvalue$variance.percent
 head(eigenvalue)
