@@ -33,7 +33,7 @@ corrplot(corrmatrix, method = 'number')
 
 ### Modello con informazioni sul gruppo
 
-mplnRes = mplnVariational(dataset = Data, membership = "none", gmin = 1, gmax = 3)
+mplnRes = mplnVariational(dataset = Data, membership = "none", gmin = 1, gmax = 4)
 
 
 mplnRes$AICresults$AICmodelselected
